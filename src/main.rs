@@ -1,3 +1,4 @@
+use clap::Parser;
 use std::{
     fs::{self, DirEntry},
     io,
@@ -8,8 +9,17 @@ pub struct DirectoryCleaner {
     pub dirs_removed: i32,
 }
 
+/// A tool for cleaning commonly bloated directories
+/// Useful for removing files before copying directories
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None)]
+struct Args {
+    /// Filepath to the target dir
+    filepath: String,
+}
+
 fn main() {
-    let directory = String::from("./testdata/testdir");
+    let args = Args::parse();
 
     let dirs_to_remove = vec![
         "node_modules".to_string(),
@@ -19,9 +29,9 @@ fn main() {
 
     let mut directory_cleaner = DirectoryCleaner::new(dirs_to_remove);
 
-    match directory_cleaner.clean_dir(directory.clone()) {
+    match directory_cleaner.clean_dir(&args.filepath) {
         Ok(_) => println!("Removed {} directories", directory_cleaner.dirs_removed),
-        Err(_) => println!("Unable to read directory: '{directory}'"),
+        Err(_) => println!("Unable to read directory: '{}'", args.filepath),
     }
 }
 
@@ -33,7 +43,7 @@ impl DirectoryCleaner {
         }
     }
 
-    pub fn clean_dir(&mut self, filepath: String) -> Result<(), io::Error> {
+    pub fn clean_dir(&mut self, filepath: &str) -> Result<(), io::Error> {
         for path in fs::read_dir(filepath)? {
             let file = path?;
 
@@ -52,7 +62,7 @@ impl DirectoryCleaner {
         }
 
         match file.path().into_os_string().into_string() {
-            Ok(filepath) => self.clean_dir(filepath)?,
+            Ok(filepath) => self.clean_dir(&filepath)?,
             Err(_) => (),
         };
 
